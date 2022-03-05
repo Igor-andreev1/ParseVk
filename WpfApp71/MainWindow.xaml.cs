@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Threading;
+using WpfApp71;
 
 namespace WpfApp71
 {
@@ -95,12 +96,10 @@ namespace WpfApp71
 
       for(int i=0;i<imagesStyle.Count();i++)
       {
-        imagesStyle[i] = imagesStyle[i].Substring(46);
-        imagesStyle[i] = imagesStyle[i].Trim();
-        imagesStyle[i] = imagesStyle[i].Substring(4);
-        imagesStyle[i] = imagesStyle[i].TrimEnd(';');
-        imagesStyle[i] = imagesStyle[i].TrimEnd(')');
-        imagesStyle[i] = imagesStyle[i].Trim('"');
+        int start = imagesStyle[i].IndexOf('(');
+        int end = imagesStyle[i].IndexOf(')');
+
+        imagesStyle[i] = imagesStyle[i].Substring(start + 1, end - start);
       }
 
       foreach(var tempimage in webElementsImages)
@@ -123,17 +122,21 @@ namespace WpfApp71
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             ChromeOptions chromeOptions = new ChromeOptions();
-            chromeOptions.AddArgument(@"user-data-dir=C:\Users\man21\AppData\Local\Google\Chrome\User Data");
+            chromeOptions.AddArgument(@"user-data-dir=C:\Users\student\AppData\Local\Google\Chrome\User Data");
             ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
             chromeDriver.Navigate().GoToUrl("https://vk.com/feed");
             List<IWebElement> webElements = chromeDriver.FindElements(By.TagName("div")).ToList();
+
+            List<VkText> texts = new List<VkText>();
+            List<VkImages> images = new List<VkImages>();
+            List<VkHrefs> hrefs = new List<VkHrefs>();
+
             foreach (var item in webElements)
             {
                 try
                 {
                     if (!item.Displayed)
                         continue;
-
                 }
                 catch (Exception)
                 {
@@ -148,28 +151,31 @@ namespace WpfApp71
                     continue;
                 if (webElementId.GetAttribute("id") == null)
                     continue;
-                double time = 0;
-                List<IWebElement> webElementsSpan = item.FindElements(By.TagName("span")).ToList();
-                foreach (var itemSpan in webElementsSpan)
-                {
-                    if (!itemSpan.Displayed)
-                        continue;
-                    if (itemSpan.GetAttribute("time") == null)
-                        continue;
-                    time = double.Parse(itemSpan.GetAttribute("time"));
-                    break;
-                }
 
-                VkNews vkNews = new VkNews()
+                VkText vkText = new VkText()
                 {
                     Text = item.Text,
-                    Id = webElementId.GetAttribute("id"),
-                    dateTime = new DateTime(1970,1,1,0,0,0).AddSeconds(time).AddHours(3),
-                    Href = getHrefs(item),
-                    Images = getImages(item)
+                    Id = webElementId.GetAttribute("id")
                };
-               break;
+                VkImages vkImages = new VkImages()
+                {
+                  Id = webElementId.GetAttribute("id"),
+                  Images = getImages(item)
+                };
+                VkHrefs vkHrefs = new VkHrefs()
+                {
+                  Id = webElementId.GetAttribute("id"),
+                  Href = getHrefs(item)
+                };
+
+                texts.Add(vkText);
+                images.Add(vkImages);
+                hrefs.Add(vkHrefs);
             }
-        }
+
+              JSONWorker.setTextInJson(texts);
+              JSONWorker.setImagesInJson(images);
+              JSONWorker.setHrefsInJson(hrefs);
+    }
     }
 }
