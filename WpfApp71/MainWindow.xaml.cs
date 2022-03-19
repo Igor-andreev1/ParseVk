@@ -16,6 +16,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Threading;
 using WpfApp71;
+using System.IO;
 
 namespace WpfApp71
 {
@@ -27,36 +28,6 @@ namespace WpfApp71
         public MainWindow()
         {
             InitializeComponent();
-        }
-        private void setTextInWebElement(ChromeDriver chromeDriver, string id, string value)
-        {
-            List<IWebElement> webElements = chromeDriver.FindElements(By.Id(id)).ToList();
-            foreach (var item in webElements)
-            {
-                if (!item.Displayed)
-                    continue;
-                item.SendKeys(value);
-            }
-        }
-        private void setClickInDate(ChromeDriver chromeDriver, string XPath, string id)
-        {
-            List<IWebElement> webElements = chromeDriver.FindElements(By.XPath(XPath)).ToList();
-            foreach (var item in webElements)
-            {
-                if (!item.Displayed)
-                    continue;
-                item.Click();
-                break;
-            }
-            //string pc = chromeDriver.PageSource;
-            webElements = chromeDriver.FindElements(By.Id(id)).ToList();
-            foreach (var item in webElements)
-            {
-                if (!item.Displayed)
-                    continue;
-                item.Click();
-                break;
-            }
         }
         private string[] getHrefs(IWebElement item)
     {
@@ -119,7 +90,14 @@ namespace WpfApp71
       return images.ToArray();
 
     }
-        private void Button_Click(object sender, RoutedEventArgs e)
+
+    private void setDataInLabel()
+    {
+      Label.Dispatcher.Invoke(new Action(() => Label.Content = File.ReadAllText("textTemp.json")));
+      File.Delete("textTemp.json");
+    }
+
+    private void Button_Click(object sender, RoutedEventArgs e)
         {
             ChromeOptions chromeOptions = new ChromeOptions();
             chromeOptions.AddArgument(@"user-data-dir=C:\Users\student\AppData\Local\Google\Chrome\User Data");
@@ -172,10 +150,35 @@ namespace WpfApp71
                 images.Add(vkImages);
                 hrefs.Add(vkHrefs);
             }
+            {
+              Thread thread = new Thread(() => JSONWorker.setTextInJson(texts));
+              thread.Start();
+            }
+            {
+              Thread thread1 = new Thread(() => JSONWorker.setImagesInJson(images));
+              thread1.Start();
+            }
+            {
+              Thread thread2 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
+              thread2.Start();
+            }
 
-              JSONWorker.setTextInJson(texts);
-              JSONWorker.setImagesInJson(images);
-              JSONWorker.setHrefsInJson(hrefs);
+            setDataInLabel();
     }
+
+    private void Button_Click_1(object sender, RoutedEventArgs e)
+    {
+
     }
+
+    private void Button_Click_2(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void Button_Click_3(object sender, RoutedEventArgs e)
+    {
+
+    }
+  }
 }

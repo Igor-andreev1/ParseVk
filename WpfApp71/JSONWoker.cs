@@ -26,7 +26,6 @@ namespace WpfApp71
         dataContractJsonSerializer.WriteObject(fileStream, images);
       }
     }
-
     public static void setHrefsInJson(List<VkHrefs> hrefs)
     {
       DataContractJsonSerializer dataContractJsonSerializer = new DataContractJsonSerializer(typeof(List<VkHrefs>));
@@ -35,5 +34,24 @@ namespace WpfApp71
         dataContractJsonSerializer.WriteObject(fileStream, hrefs);
       }
     }
+
+/*    public static string[] readText()
+    {
+      using (FileStream fs = new FileStream("text.json", FileMode.OpenOrCreate))
+      {
+        string[] data = File.ReadAllLines("text.json");
+        return data;
+      }
+    }
+
+    public static void readimages()
+    {
+
+    }
+
+    public static void readHrefs()
+    {
+
+    }*/
   }
 }
