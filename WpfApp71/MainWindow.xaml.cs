@@ -1,29 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Threading;
-using WpfApp71;
-using System.IO;
 
 namespace WpfApp71
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+  /// <summary>
+  /// Логика взаимодействия для MainWindow.xaml
+  /// </summary>
+  public partial class MainWindow : Window
     {
         public MainWindow()
         {
@@ -91,16 +79,20 @@ namespace WpfApp71
 
     }
 
-    private void setDataInLabel()
+    private void setDataInLabel(string option)
     {
-      Label.Dispatcher.Invoke(new Action(() => Label.Content = File.ReadAllText("textTemp.json")));
-      File.Delete("textTemp.json");
+      if (option == "text")
+        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readText()));
+      if (option == "hrefs")
+        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readHrefs()));
+      if (option == "images")
+        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readImages()));
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
         {
             ChromeOptions chromeOptions = new ChromeOptions();
-            chromeOptions.AddArgument(@"user-data-dir=C:\Users\student\AppData\Local\Google\Chrome\User Data");
+            chromeOptions.AddArgument(@"user-data-dir=C:\Users\man21\AppData\Local\Google\Chrome\User Data");
             ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
             chromeDriver.Navigate().GoToUrl("https://vk.com/feed");
             List<IWebElement> webElements = chromeDriver.FindElements(By.TagName("div")).ToList();
@@ -163,22 +155,22 @@ namespace WpfApp71
               thread2.Start();
             }
 
-            setDataInLabel();
+            label.Dispatcher.Invoke(new Action(() => label.Text = "Парс завершён!"));
     }
 
     private void Button_Click_1(object sender, RoutedEventArgs e)
     {
-
+      setDataInLabel("text");
     }
 
     private void Button_Click_2(object sender, RoutedEventArgs e)
     {
-
+      setDataInLabel("images");
     }
 
     private void Button_Click_3(object sender, RoutedEventArgs e)
     {
-
+      setDataInLabel("hrefs");
     }
   }
 }

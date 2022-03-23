@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Runtime.Serialization.Json;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace WpfApp71
 {
+
   class JSONWorker
   {
     public static void setTextInJson(List<VkText> text)
@@ -34,24 +32,61 @@ namespace WpfApp71
         dataContractJsonSerializer.WriteObject(fileStream, hrefs);
       }
     }
-
-/*    public static string[] readText()
+    public static string readText()
     {
-      using (FileStream fs = new FileStream("text.json", FileMode.OpenOrCreate))
+      File.Copy("text.json", "textTemp.json");
+      string fileName = "textTemp.json";
+      string jsonString = File.ReadAllText(fileName);
+      var vkText = JsonConvert.DeserializeObject<List<VkText>>(jsonString);
+      string sumString = "";
+      foreach(var item in vkText)
       {
-        string[] data = File.ReadAllLines("text.json");
-        return data;
+        sumString += item.Id + ": " + item.Text;
+        sumString += "\n";
       }
+      File.Delete("textTemp.json");
+
+      return sumString;
     }
-
-    public static void readimages()
+    public static string readImages()
     {
+      File.Copy("images.json", "imagesTemp.json");
+      string fileName = "imagesTemp.json";
+      string jsonString = File.ReadAllText(fileName);
+      var vkImages = JsonConvert.DeserializeObject<List<VkImages>>(jsonString);
+      string sumString = "";
+      foreach (var item in vkImages)
+      {
+        sumString += item.Id + ": \n";
+        foreach(var image in item.Images)
+        {
+          sumString += image + "\n";
+        }
+        sumString += "\n";
+      }
+      File.Delete("imagesTemp.json");
 
+      return sumString;
     }
-
-    public static void readHrefs()
+    public static string readHrefs()
     {
+      File.Copy("hrefs.json", "hrefsTemp.json");
+      string fileName = "hrefsTemp.json";
+      string jsonString = File.ReadAllText(fileName);
+      var vkHrefs = JsonConvert.DeserializeObject<List<VkHrefs>>(jsonString);
+      string sumString = "";
+      foreach (var item in vkHrefs)
+      {
+        sumString += item.Id + ": \n";
+        foreach (var href in item.Href)
+        {
+          sumString += href + "\n";
+        }
+        sumString += "\n";
+      }
+      File.Delete("hrefsTemp.json");
 
-    }*/
+      return sumString;
+    }
   }
 }
