@@ -78,6 +78,18 @@ namespace WpfApp71
       return images.ToArray();
 
     }
+        private string getText(IWebElement item)
+        {
+            try
+            {
+              return item.FindElement(By.ClassName("wall_post_text")).Text;
+            }
+            catch
+            {
+              return null;
+            }
+
+        }
 
     private void setDataInLabel(string option)
     {
@@ -124,7 +136,7 @@ namespace WpfApp71
 
                 VkText vkText = new VkText()
                 {
-                    Text = item.Text,
+                    Text = getText(item),
                     Id = webElementId.GetAttribute("id")
                };
                 VkImages vkImages = new VkImages()

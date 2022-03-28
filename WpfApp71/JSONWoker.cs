@@ -41,7 +41,10 @@ namespace WpfApp71
       string sumString = "";
       foreach(var item in vkText)
       {
-        sumString += item.Id + ": " + item.Text;
+        if (item.Id == "")
+          continue;
+
+        sumString += item.Id + ": \n" + item.Text;
         sumString += "\n";
       }
       File.Delete("textTemp.json");
@@ -57,6 +60,9 @@ namespace WpfApp71
       string sumString = "";
       foreach (var item in vkImages)
       {
+        if (item.Id == "")
+          continue;
+
         sumString += item.Id + ": \n";
         foreach(var image in item.Images)
         {
@@ -77,10 +83,13 @@ namespace WpfApp71
       string sumString = "";
       foreach (var item in vkHrefs)
       {
+        if (item.Id == "")
+          continue;
+
         sumString += item.Id + ": \n";
         foreach (var href in item.Href)
         {
-          sumString += href + "\n";
+          sumString += href + "\n\n";
         }
         sumString += "\n";
       }
