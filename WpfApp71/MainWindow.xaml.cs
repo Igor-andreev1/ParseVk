@@ -90,8 +90,7 @@ namespace WpfApp71
             }
 
         }
-
-    private void setDataInLabel(string option)
+        private void setDataInLabel(string option)
     {
       if (option == "text")
         label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readText()));
@@ -100,89 +99,141 @@ namespace WpfApp71
       if (option == "images")
         label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readImages()));
     }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
+        private void setDataInLabelObj(object i)
         {
-            ChromeOptions chromeOptions = new ChromeOptions();
-            chromeOptions.AddArgument(@"user-data-dir=C:\Users\man21\AppData\Local\Google\Chrome\User Data");
-            ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
-            chromeDriver.Navigate().GoToUrl("https://vk.com/feed");
-            List<IWebElement> webElements = chromeDriver.FindElements(By.TagName("div")).ToList();
+             setDataInLabel((string)j);
+        }
 
-            List<VkText> texts = new List<VkText>();
-            List<VkImages> images = new List<VkImages>();
-            List<VkHrefs> hrefs = new List<VkHrefs>();
 
-            foreach (var item in webElements)
+        private void Button_Click(object sender, RoutedEventArgs e)
             {
-                try
+                ChromeOptions chromeOptions = new ChromeOptions();
+                chromeOptions.AddArgument(@"user-data-dir=C:\Users\student\AppData\Local\Google\Chrome\User Data");
+                ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
+                chromeDriver.Navigate().GoToUrl("https://vk.com/feed");
+                List<IWebElement> webElements = chromeDriver.FindElements(By.TagName("div")).ToList();
+
+                List<VkText> texts = new List<VkText>();
+                List<VkImages> images = new List<VkImages>();
+                List<VkHrefs> hrefs = new List<VkHrefs>();
+
+                foreach (var item in webElements)
                 {
-                    if (!item.Displayed)
+                    try
+                    {
+                        if (!item.Displayed)
+                            continue;
+                    }
+                    catch (Exception)
+                    {
                         continue;
+                    }
+                    if (item.GetAttribute("class")==null)
+                        continue;
+                    if (!item.GetAttribute("class").Trim().Equals("feed_row"))
+                        continue;
+                    IWebElement webElementId = item.FindElement(By.TagName("div"));
+                    if (webElementId == null)
+                        continue;
+                    if (webElementId.GetAttribute("id") == null)
+                        continue;
+
+                    VkText vkText = new VkText()
+                    {
+                        Text = getText(item),
+                        Id = webElementId.GetAttribute("id")
+                   };
+                    VkImages vkImages = new VkImages()
+                    {
+                      Id = webElementId.GetAttribute("id"),
+                      Images = getImages(item)
+                    };
+                    VkHrefs vkHrefs = new VkHrefs()
+                    {
+                      Id = webElementId.GetAttribute("id"),
+                      Href = getHrefs(item)
+                    };
+
+                    texts.Add(vkText);
+                    images.Add(vkImages);
+                    hrefs.Add(vkHrefs);
                 }
-                catch (Exception)
+
+                int i = 1;
+                int j = 0;
+
+
+                Thread thread1 = new Thread(() => JSONWorker.setTextInJson(texts));
+                Thread thread2 = new Thread(() => JSONWorker.setImagesInJson(images));
+                Thread thread3 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
+                Thread thread4 = new Thread(new ParameterizedThreadStart(setDataInLabelObj));
+
+                while (true)
                 {
-                    continue;
+                    if ((i != 1) && (i % 5 != 0))
+                    {
+                        if (j == 0)
+                        {
+                          thread4.Start("text");
+                          thread3.Join();
+                        }
+                        else if (j == 1)
+                        {
+                          thread4.Start("images");
+                          thread3.Join();
+                        }
+                        else
+                        {
+                          thread4.Start("hrefs");
+                          thread3.Join();
+                        }
+
+                        j++;
+                        if (j == 3)
+                          j = 0;
+                    }
+
+                    thread1.Start();
+                    thread2.Start();
+                    thread3.Start();
+
+                    
+                    thread1.Join();
+                    thread2.Join();
+                    thread3.Join();
                 }
-                if (item.GetAttribute("class")==null)
-                    continue;
-                if (!item.GetAttribute("class").Trim().Equals("feed_row"))
-                    continue;
-                IWebElement webElementId = item.FindElement(By.TagName("div"));
-                if (webElementId == null)
-                    continue;
-                if (webElementId.GetAttribute("id") == null)
-                    continue;
+        }
 
-                VkText vkText = new VkText()
-                {
-                    Text = getText(item),
-                    Id = webElementId.GetAttribute("id")
-               };
-                VkImages vkImages = new VkImages()
-                {
-                  Id = webElementId.GetAttribute("id"),
-                  Images = getImages(item)
-                };
-                VkHrefs vkHrefs = new VkHrefs()
-                {
-                  Id = webElementId.GetAttribute("id"),
-                  Href = getHrefs(item)
-                };
 
-                texts.Add(vkText);
-                images.Add(vkImages);
-                hrefs.Add(vkHrefs);
-            }
-            {
-              Thread thread = new Thread(() => JSONWorker.setTextInJson(texts));
-              thread.Start();
-            }
-            {
-              Thread thread1 = new Thread(() => JSONWorker.setImagesInJson(images));
-              thread1.Start();
-            }
-            {
-              Thread thread2 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
-              thread2.Start();
-            }
 
-            label.Dispatcher.Invoke(new Action(() => label.Text = "Парс завершён!"));
-    }
+    /// <summary>
+    /// Прочитать текст
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+          setDataInLabel("text");
+        }
 
-    private void Button_Click_1(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("text");
-    }
+    /// <summary>
+    /// Прочитать изображения
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+          setDataInLabel("images");
+        }
 
-    private void Button_Click_2(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("images");
-    }
-
-    private void Button_Click_3(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("hrefs");
-    }
+    /// <summary>
+    /// Прочитать ссылки
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+          setDataInLabel("hrefs");
+        }
   }
 }
