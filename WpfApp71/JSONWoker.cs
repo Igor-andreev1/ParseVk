@@ -2,6 +2,7 @@
 using System.Runtime.Serialization.Json;
 using System.IO;
 using Newtonsoft.Json;
+using System;
 
 namespace WpfApp71
 {
@@ -10,6 +11,8 @@ namespace WpfApp71
   {
     public static void setTextInJson(List<VkText> text)
     {
+      Console.WriteLine("Работает поток 1");
+
       DataContractJsonSerializer dataContractJsonSerializer = new DataContractJsonSerializer(typeof(List<VkText>));
       using (FileStream fileStream = new FileStream("text.json", FileMode.Create))
       {
@@ -18,6 +21,8 @@ namespace WpfApp71
     }
     public static void setImagesInJson(List<VkImages> images)
     {
+      Console.WriteLine("Работает поток 2");
+
       DataContractJsonSerializer dataContractJsonSerializer = new DataContractJsonSerializer(typeof(List<VkImages>));
       using (FileStream fileStream = new FileStream("images.json", FileMode.Create))
       {
@@ -26,6 +31,8 @@ namespace WpfApp71
     }
     public static void setHrefsInJson(List<VkHrefs> hrefs)
     {
+      Console.WriteLine("Работает поток 3");
+
       DataContractJsonSerializer dataContractJsonSerializer = new DataContractJsonSerializer(typeof(List<VkHrefs>));
       using (FileStream fileStream = new FileStream("hrefs.json", FileMode.Create))
       {

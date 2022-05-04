@@ -5,6 +5,7 @@ using System.Windows;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Threading;
+using System.IO;
 
 namespace WpfApp71
 {
@@ -12,6 +13,13 @@ namespace WpfApp71
   {
     public MainWindow()
     {
+      File.Delete("text.json");
+      File.Delete("images.json");
+      File.Delete("hrefs.json");
+      File.Delete("textTemp.json");
+      File.Delete("hrefsTemp.json");
+      File.Delete("imagesTemp.json");
+
       InitializeComponent();
     }
     private string[] getHrefs(IWebElement item)
@@ -87,14 +95,23 @@ namespace WpfApp71
       }
 
     }
+
+    /// <summary>
+    /// Читатет информацию из файла
+    /// </summary>
+    /// <param name="option"> 
+    /// images 
+    /// text
+    /// hrefs
+    /// </param>
     private void setDataInLabel(string option)
     {
       if (option == "text")
-        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readText()));
+        MessageBox.Show(JSONWorker.readText());
       if (option == "hrefs")
-        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readHrefs()));
+        MessageBox.Show(JSONWorker.readHrefs());
       if (option == "images")
-        label.Dispatcher.Invoke(new Action(() => label.Text = JSONWorker.readImages()));
+        MessageBox.Show(JSONWorker.readImages());
     }
 
     public static List<string> uniqId = new List<string>();
@@ -155,11 +172,20 @@ namespace WpfApp71
       }
     }
 
+    /// <summary>
+    /// Обёртка для parametrizedThreadStart
+    /// </summary>
+    /// <param name="i">
+    /// text
+    /// images
+    /// hrefs
+    /// </param>
     private void setDataInLabelObj(object i)
     {
+      Console.WriteLine("Работает поток 4");
+
       setDataInLabel((string)i);
     }
-
 
     private void Button_Click(object sender, RoutedEventArgs e)
     {
@@ -173,51 +199,101 @@ namespace WpfApp71
       List<VkHrefs> hrefs = new List<VkHrefs>();
 
       Thread thread1 = new Thread(() => JSONWorker.setTextInJson(texts));
-      Thread thread2 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
-      Thread thread3 = new Thread(() => JSONWorker.setImagesInJson(images));
+      Thread thread2 = new Thread(() => JSONWorker.setImagesInJson(images));
+      Thread thread3 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
       Thread thread4 = new Thread(new ParameterizedThreadStart(setDataInLabelObj));
+
+      int j = 0; // Итератор для работы thread4
+      int key = 0; // Блокировка потоков при работе thread4
 
       for (int i = 0; i < 10; i ++)
       {
+        Console.WriteLine($"\n\nИтерация номер - {i + 1}\n\n");
+
+        if ((i != 0) && (i % 4 != 0))
+        {
+          if (i == 1)
+            thread4.Start("text");
+          else
+          {
+            thread4 = new Thread(new ParameterizedThreadStart(setDataInLabelObj));
+          }
+
+
+          if (j == 0)
+          {
+            key = 1;
+            if (i != 1)
+            {
+              thread4.Start("text");
+            }
+          }
+          else if (j == 1)
+          {
+            key = 2;
+            thread4.Start("images");
+          }
+          else
+          {
+            key = 3;
+            thread4.Start("hrefs");
+          }
+          j++;
+          if (j == 3)
+            j = 0;
+
+          thread4.Join();
+          thread4.Interrupt();
+        }
+        else
+        {
+          key = 0;
+        }
+
+
         parseFeedRow(chromeDriver, texts, images, hrefs);
 
-        // Тут будет выолняться основной код 
+
+        if (i == 0)
+        {
+          thread1.Start();
+        }
+        else if (key != 1)
+        {
+          thread1 = new Thread(() => JSONWorker.setTextInJson(texts));
+          thread1.Start();
+        }
+
+        if (i == 0)
+        {
+          thread2.Start();
+        }
+        else if (key != 2)
+        {
+          thread2 = new Thread(() => JSONWorker.setImagesInJson(images));
+          thread2.Start();
+        }
+
+        if (i == 0)
+        {
+          thread3.Start();
+        }
+        else if (key != 3)
+        {
+          thread3 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
+          thread3.Start();
+        }
+
+
+        thread1.Join();
+        thread2.Join();
+        thread3.Join();
+        thread1.Interrupt();
+        thread2.Interrupt();
+        thread3.Interrupt();
 
         chromeDriver.Navigate().Refresh();
       }
-
-    }
-
-
-
-    /// <summary>
-    /// Прочитать текст
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void Button_Click_1(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("text");
-    }
-
-    /// <summary>
-    /// Прочитать изображения
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void Button_Click_2(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("images");
-    }
-
-    /// <summary>
-    /// Прочитать ссылки
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void Button_Click_3(object sender, RoutedEventArgs e)
-    {
-      setDataInLabel("hrefs");
     }
   }
 }

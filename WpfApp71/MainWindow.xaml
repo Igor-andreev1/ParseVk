@@ -8,10 +8,6 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Button Content="Start parse" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Click="Button_Click" Height="74" Width="214" FontSize="35" FontFamily="Technic"/>
-        <Button Content="Read text" HorizontalAlignment="Left" Margin="229,10,0,0" VerticalAlignment="Top" Width="192" Height="74" Click="Button_Click_1" FontSize="30" FontFamily="Technic"/>
-        <Button Content="Read images" HorizontalAlignment="Left" Margin="426,10,0,0" VerticalAlignment="Top" Width="183" Height="74" Click="Button_Click_2" FontSize="30" FontFamily="Technic"/>
-        <Button Content="Read Hrefs" HorizontalAlignment="Left" Margin="614,10,0,0" VerticalAlignment="Top" Width="159" Height="74" Click="Button_Click_3" FontSize="30" FontFamily="Technic"/>
-        <TextBox HorizontalAlignment="Center" Margin="0,89,0,0" IsReadOnly="True" Name="label" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="780" Height="317"/>
 
     </Grid>
 </Window>
