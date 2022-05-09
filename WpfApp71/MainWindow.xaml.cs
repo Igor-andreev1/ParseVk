@@ -6,6 +6,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Threading;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 
 namespace WpfApp71
 {
@@ -24,10 +25,10 @@ namespace WpfApp71
     }
     private string[] getHrefs(IWebElement item)
     {
-      List<IWebElement> webElementsHref = item.FindElements(By.TagName("a")).ToList(); // Ищем все теги ссылок
+      List<IWebElement> webElementsHref = item.FindElements(By.TagName("a")).ToList();
       List<string> Hrefs = new List<string>();
 
-      foreach (var hrefs in webElementsHref) // Оставляем только нужные
+      foreach (var hrefs in webElementsHref)
       {
         if (hrefs == null)
           continue;
@@ -95,16 +96,7 @@ namespace WpfApp71
       }
 
     }
-
-    /// <summary>
-    /// Читатет информацию из файла
-    /// </summary>
-    /// <param name="option"> 
-    /// images 
-    /// text
-    /// hrefs
-    /// </param>
-    private void setDataInLabel(string option)
+    private void readData(string option)
     {
       if (option == "text")
         MessageBox.Show(JSONWorker.readText());
@@ -115,7 +107,6 @@ namespace WpfApp71
     }
 
     public static List<string> uniqId = new List<string>();
-
     private void parseFeedRow(ChromeDriver chromeDriver, List<VkText> texts, List<VkImages> images, List<VkHrefs> hrefs)
     {
 
@@ -171,22 +162,153 @@ namespace WpfApp71
         hrefs.Add(vkHrefs);
       }
     }
-
-    /// <summary>
-    /// Обёртка для parametrizedThreadStart
-    /// </summary>
-    /// <param name="i">
-    /// text
-    /// images
-    /// hrefs
-    /// </param>
-    private void setDataInLabelObj(object i)
+    private void readDAtalObj(object i)
     {
       Console.WriteLine("Работает поток 4");
 
-      setDataInLabel((string)i);
+      readData((string)i);
+    }
+    private void sendData(object Text)
+    {
+      MemoryMappedFile memoryMappedFile;
+
+      try
+      {
+        memoryMappedFile = MemoryMappedFile.CreateNew("WpfApp71", Text.ToString().Length * 2 + 4);
+      }
+      catch (Exception)
+      {
+        memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71");
+      }
+
+
+      using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, Text.ToString().Length * 2 + 4))
+      {
+        memoryMappedViewAccessor.Write(0, Text.ToString().Length);
+        memoryMappedViewAccessor.WriteArray(4, Text.ToString().ToCharArray(), 0, Text.ToString().Length);
+      }
+    }
+    private void sendReadyMsg(bool option)
+    {
+      MemoryMappedFile memoryMappedFile;
+
+      string message;
+
+      if (option)
+        message = "process 1 rdy";
+      else
+        message = "process 1 is working";
+
+      try
+      {
+        memoryMappedFile = MemoryMappedFile.CreateNew("WpfApp71", message.Length * 2 + 4);
+      }
+      catch (Exception)
+      {
+        memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71");
+      }
+
+
+      using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, message.Length * 2 + 4))
+      {
+        memoryMappedViewAccessor.Write(0, message.Length);
+        memoryMappedViewAccessor.WriteArray(4, message.ToCharArray(), 0, message.Length);
+      }
     }
 
+    /// <summary>
+    /// 
+    /// 0 - нет сообщений или процесс 2 занят
+    /// 1 - процесс 2 готов 
+    /// 2 - процесс 2 выключен
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    private int getReadyMsg()
+    {
+      MemoryMappedFile memoryMappedFile;
+
+      string Message = string.Empty;
+
+      try
+      {
+        memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71");
+      }
+      catch (Exception)
+      {
+        return 0;
+      }
+
+      int size = 0;
+      using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 4))
+      {
+        size = memoryMappedViewAccessor.ReadInt32(0);
+      }
+      if (size == 0)
+        return 0;
+
+      using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(4, size * 2))
+      {
+        char[] vs = new char[size];
+        memoryMappedViewAccessor.ReadArray(0, vs, 0, size);
+        if (Message.Equals(new string(vs)))
+          return 0;
+
+        Message = new string(vs);
+        if (Message.Equals("process 2 rdy"))
+        {
+          return 1;
+        }
+        else if (Message.Equals("process 2 closed"))
+        {
+          return 2;
+        }
+        else
+        {
+          return 0;
+        }
+      }
+    }
+    private void trySendData(string data)
+    {
+      Console.WriteLine("sending - process 1 is rdy");
+      sendReadyMsg(true);
+
+      Thread.Sleep(100);
+
+      if (getReadyMsg() == 1)
+      {
+        Console.WriteLine("got - process 2 is rdy!\nWaiting for his work");
+        sendData(data);
+
+        Thread.Sleep(100);
+
+        while (true)
+        {
+          int status = getReadyMsg();
+
+          if (status == 0)
+          {
+            continue;
+          }
+          else
+          {
+            Console.WriteLine("process 2 end working");
+            break;
+          }
+        }
+      }
+
+      Console.WriteLine("sending - process 1 is working");
+      sendReadyMsg(false);
+    }
+
+
+    /// <summary>
+    /// Основное тело программы
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void Button_Click(object sender, RoutedEventArgs e)
     {
       ChromeOptions chromeOptions = new ChromeOptions();
@@ -201,10 +323,11 @@ namespace WpfApp71
       Thread thread1 = new Thread(() => JSONWorker.setTextInJson(texts));
       Thread thread2 = new Thread(() => JSONWorker.setImagesInJson(images));
       Thread thread3 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
-      Thread thread4 = new Thread(new ParameterizedThreadStart(setDataInLabelObj));
+      Thread thread4 = new Thread(new ParameterizedThreadStart(readDAtalObj));
 
       int j = 0; // Итератор для работы thread4
       int key = 0; // Блокировка потоков при работе thread4
+      string data;
 
       for (int i = 0; i < 10; i ++)
       {
@@ -216,7 +339,7 @@ namespace WpfApp71
             thread4.Start("text");
           else
           {
-            thread4 = new Thread(new ParameterizedThreadStart(setDataInLabelObj));
+            thread4 = new Thread(new ParameterizedThreadStart(readDAtalObj));
           }
 
 
@@ -291,6 +414,9 @@ namespace WpfApp71
         thread1.Interrupt();
         thread2.Interrupt();
         thread3.Interrupt();
+
+        data = JSONWorker.readText() + "end text" + JSONWorker.readImages() + "end images" + JSONWorker.readHrefs() + "end hrefs";
+        trySendData(data);
 
         chromeDriver.Navigate().Refresh();
       }
