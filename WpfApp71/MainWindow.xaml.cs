@@ -174,11 +174,11 @@ namespace WpfApp71
 
       try
       {
-        memoryMappedFile = MemoryMappedFile.CreateNew("WpfApp71", Text.ToString().Length * 2 + 4);
+        memoryMappedFile = MemoryMappedFile.CreateNew("WpfApp71Data", Text.ToString().Length * 2 + 4);
       }
       catch (Exception)
       {
-        memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71");
+        memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71Data");
       }
 
 
@@ -202,9 +202,11 @@ namespace WpfApp71
       try
       {
         memoryMappedFile = MemoryMappedFile.CreateNew("WpfApp71", message.Length * 2 + 4);
+        Console.WriteLine("Создана общая память!");
       }
       catch (Exception)
       {
+        Console.WriteLine("общая память открыта!");
         memoryMappedFile = MemoryMappedFile.OpenExisting("WpfApp71");
       }
 
@@ -236,6 +238,7 @@ namespace WpfApp71
       }
       catch (Exception)
       {
+        Console.WriteLine("ОШИБКА! общая память не было создана!");
         return 0;
       }
 
@@ -245,14 +248,20 @@ namespace WpfApp71
         size = memoryMappedViewAccessor.ReadInt32(0);
       }
       if (size == 0)
+      {
+        Console.WriteLine("Было получено сообщение с размером 0!");
         return 0;
+      }
 
       using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(4, size * 2))
       {
         char[] vs = new char[size];
         memoryMappedViewAccessor.ReadArray(0, vs, 0, size);
         if (Message.Equals(new string(vs)))
+        {
+          Console.WriteLine("Было получено пустое сообщение");
           return 0;
+        }
 
         Message = new string(vs);
         if (Message.Equals("process 2 rdy"))
@@ -265,6 +274,7 @@ namespace WpfApp71
         }
         else
         {
+          Console.WriteLine("Полученное сообщение - " + Message);
           return 0;
         }
       }
@@ -274,29 +284,39 @@ namespace WpfApp71
       Console.WriteLine("sending - process 1 is rdy");
       sendReadyMsg(true);
 
-      Thread.Sleep(100);
+      Thread.Sleep(1000);
 
       if (getReadyMsg() == 1)
       {
         Console.WriteLine("got - process 2 is rdy!\nWaiting for his work");
         sendData(data);
 
-        Thread.Sleep(100);
+        Thread.Sleep(1000);
 
         while (true)
         {
+          Thread.Sleep(1000);
           int status = getReadyMsg();
 
           if (status == 0)
           {
             continue;
           }
-          else
+          else if (status == 1)
           {
             Console.WriteLine("process 2 end working");
             break;
           }
+          else
+          {
+            Console.WriteLine("process 2 closed");
+            break;
+          }
         }
+      }
+      else
+      {
+        Console.WriteLine("process 2 is off");
       }
 
       Console.WriteLine("sending - process 1 is working");
@@ -312,6 +332,7 @@ namespace WpfApp71
     private void Button_Click(object sender, RoutedEventArgs e)
     {
       ChromeOptions chromeOptions = new ChromeOptions();
+      //Тут  надо поменять имя пользователя
       chromeOptions.AddArgument(@"user-data-dir=C:\Users\man21\AppData\Local\Google\Chrome\User Data");
       ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
       chromeDriver.Navigate().GoToUrl("https://vk.com/feed");
@@ -325,8 +346,8 @@ namespace WpfApp71
       Thread thread3 = new Thread(() => JSONWorker.setHrefsInJson(hrefs));
       Thread thread4 = new Thread(new ParameterizedThreadStart(readDAtalObj));
 
-      int j = 0; // Итератор для работы thread4
-      int key = 0; // Блокировка потоков при работе thread4
+      int j = 0; 
+      int key = 0; 
       string data;
 
       for (int i = 0; i < 10; i ++)
@@ -416,6 +437,7 @@ namespace WpfApp71
         thread3.Interrupt();
 
         data = JSONWorker.readText() + "end text" + JSONWorker.readImages() + "end images" + JSONWorker.readHrefs() + "end hrefs";
+
         trySendData(data);
 
         chromeDriver.Navigate().Refresh();
