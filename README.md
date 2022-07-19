@@ -1,1 +1,1 @@
-Ready!
+# Ended as educational project
